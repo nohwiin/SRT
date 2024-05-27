@@ -25,4 +25,7 @@ public static class Constants
     public static readonly string LOGIN_TYPES_MEMBERSHIP_ID = "1";
     public static readonly string LOGIN_TYPES_EMAIL = "2";
     public static readonly string LOGIN_TYPES_PHONE_NUMBER = "3";
+
+    public static readonly string HEADER_USER_AGENT = "User-Agent";
+    public static readonly string HEADER_ACCEPT = "application/json";
 }

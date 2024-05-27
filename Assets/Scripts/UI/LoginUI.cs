@@ -17,6 +17,12 @@ public class LoginUI : MonoBehaviour
     {
         RegisterToggleEvents();
         SetPasswordFieldContentType();
+        InitializeUI();
+    }
+
+    private void OnDestroy()
+    {
+        UnregisterToggleEvents();
     }
 
     private void RegisterToggleEvents()
@@ -25,7 +31,33 @@ public class LoginUI : MonoBehaviour
         {
             toggle.onValueChanged.AddListener((isOn) => OnLoginTypesToggleValueChanged(toggle));
         }
-        showPassword.onValueChanged.AddListener((isOn) => OnShowPasswordToggleValueChanged(showPassword));
+        showPassword.onValueChanged.AddListener(OnShowPasswordToggleValueChanged);
+    }
+
+    private void UnregisterToggleEvents()
+    {
+        foreach (Toggle toggle in loginTypes.GetComponentsInChildren<Toggle>())
+        {
+            toggle.onValueChanged.RemoveListener((isOn) => OnLoginTypesToggleValueChanged(toggle));
+        }
+        showPassword.onValueChanged.RemoveListener(OnShowPasswordToggleValueChanged);
+    }
+
+    private void InitializeUI()
+    {
+        // 초기 상태 설정 (예: 첫 번째 토글 선택, Placeholder 텍스트 설정 등)
+        foreach (Toggle toggle in loginTypes.GetComponentsInChildren<Toggle>())
+        {
+            if (toggle.isOn)
+            {
+                SetInputFieldPlaceholders(toggle.GetComponentInChildren<TextMeshProUGUI>().text);
+                SetToggleColors(toggle.GetComponentInChildren<Image>(), toggle.GetComponentInChildren<TextMeshProUGUI>(), PrimaryColor);
+            }
+            else
+            {
+                SetToggleColors(toggle.GetComponentInChildren<Image>(), toggle.GetComponentInChildren<TextMeshProUGUI>(), UnderLineDefaultColor, LabelDefaultColor);
+            }
+        }
     }
 
     private void OnLoginTypesToggleValueChanged(Toggle changedToggle)
@@ -89,11 +121,11 @@ public class LoginUI : MonoBehaviour
         }
     }
 
-    private void OnShowPasswordToggleValueChanged(Toggle changedToggle)
+    private void OnShowPasswordToggleValueChanged(bool isOn)
     {
-        Text toggleLabel = changedToggle.GetComponentInChildren<Text>();
+        Text toggleLabel = showPassword.GetComponentInChildren<Text>();
 
-        if (changedToggle.isOn)
+        if (isOn)
         {
             // Toggle이 선택되었을 때 텍스트 변경
             toggleLabel.text = "숨기기";

@@ -24,13 +24,13 @@ public class AuthenticationManager : MonoBehaviour
         }
     }
 
-    private bool verbose;
+    private bool verbose = true;
 
     private UnityWebRequest CreateRequest(string url, WWWForm form)
     {
         var request = UnityWebRequest.Post(url, form);
-        request.SetRequestHeader("User-Agent", Constants.DEFAULT_USER_AGENT);
-        request.SetRequestHeader("Accept", "application/json");
+        request.SetRequestHeader(Constants.HEADER_USER_AGENT, Constants.DEFAULT_USER_AGENT);
+        request.SetRequestHeader(Constants.HEADER_ACCEPT, Constants.HEADER_ACCEPT);
         return request;
     }
 
@@ -70,32 +70,32 @@ public class AuthenticationManager : MonoBehaviour
         form.AddField("srchDvNm", user.Username);
         form.AddField("hmpgPwdCphd", user.Password);
 
-        UnityWebRequest request = CreateRequest(Constants.API_ENDPOINTS_LOGIN, form);
-        yield return request.SendWebRequest();
-
-        if (request.result != UnityWebRequest.Result.Success)
+        yield return NetworkManager.PostRequest(Constants.API_ENDPOINTS_LOGIN, form, (UnityWebRequest request) =>
         {
-            Log(request.error);
-            callback(false, request.error);
-        }
-        else
-        {
-            Log(request.downloadHandler.text);
-
-            // Handle specific error messages
-            string responseText = request.downloadHandler.text;
-            if (responseText.Contains("존재하지않는 회원입니다") || responseText.Contains("비밀번호 오류"))
+            if (request.result != UnityWebRequest.Result.Success)
             {
-                callback(false, responseText);
-            }
-            else if (responseText.Contains("Your IP Address Blocked due to abnormal access."))
-            {
-                callback(false, "Your IP Address Blocked due to abnormal access.");
+                Log(request.error);
+                callback(false, request.error);
             }
             else
             {
-                callback(true, responseText);
+                string responseText = request.downloadHandler.text;
+                Log(responseText);
+
+                // Handle specific error messages
+                if (responseText.Contains("존재하지않는 회원입니다") || responseText.Contains("비밀번호 오류"))
+                {
+                    callback(false, responseText);
+                }
+                else if (responseText.Contains("Your IP Address Blocked due to abnormal access."))
+                {
+                    callback(false, "Your IP Address Blocked due to abnormal access.");
+                }
+                else
+                {
+                    callback(true, responseText);
+                }
             }
-        }
+        });
     }
 }
