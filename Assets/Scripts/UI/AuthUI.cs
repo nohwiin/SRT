@@ -80,11 +80,17 @@ public class AuthUI : MonoBehaviour
     /// </summary>
     private void InitializeUI()
     {
+        var lastSignInType = authManager.TryGetLastSignInType();
+        var toggleIndex = 1;
+        
         foreach (Toggle toggle in signInTypeToggleGroup.GetComponentsInChildren<Toggle>())
         {
-            if (toggle.isOn)
+            if (lastSignInType == toggleIndex)
             {
-                string toggleText = toggle.GetComponentInChildren<TextMeshProUGUI>().text;
+                var toggleText = toggle.GetComponentInChildren<TextMeshProUGUI>().text;
+                authManager.SetCurrentSignInType(toggleText);
+
+                toggle.isOn = true;
                 SetInputFieldPlaceholders(toggleText);
                 SetInputFieldTexts(toggleText);
                 SetRememberIdToggleTexts(toggleText);
@@ -94,6 +100,8 @@ public class AuthUI : MonoBehaviour
             {
                 SetToggleColors(toggle.GetComponentInChildren<Image>(), toggle.GetComponentInChildren<TextMeshProUGUI>(), UnderLineDefaultColor, LabelDefaultColor);
             }
+
+            toggleIndex += 1;
         }
     }
 

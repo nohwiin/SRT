@@ -36,13 +36,23 @@ public class AuthController : MonoBehaviour
     {
         string username = usernameInputField.text;
         string password = passwordInputField.text;
-        
-        authManager.SignIn(username, password, result =>
+
+        if (ValidateCredentials(username, password) == false)
+        {
+            Debug.LogError("Invalid username or password format.");
+            return;
+        }
+
+        User user = new(username, password);
+
+        authManager.SignIn(user, (result, response) =>
         {
             if (result)
             {
                 // 로그인 성공 처리
                 Debug.Log("Login successful");
+                Debug.Log(response);
+                
                 if (rememberIdToggle.isOn)
                 {
                     authManager.SaveUserInfo(username, password); // 비밀번호 저장은 해싱 또는 암호화를 사용하는 것이 좋습니다.
@@ -51,8 +61,24 @@ public class AuthController : MonoBehaviour
             else
             {
                 // 로그인 실패 처리
-                Debug.Log("Login failed");
+                Debug.LogError("Login failed");
             }
         });
+    }
+
+    /// <summary>
+    /// 사용자 자격 증명을 검증합니다.
+    /// </summary>
+    /// <param name="username">사용자 이름</param>
+    /// <param name="password">사용자 비밀번호</param>
+    /// <returns>자격 증명이 유효한지 여부</returns>
+    private bool ValidateCredentials(string username, string password)
+    {
+        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+        {
+            return false;
+        }
+
+        return true;
     }
 }
