@@ -18,6 +18,7 @@ public class AuthManager : MonoBehaviour
     public static AuthManager Instance { get; private set; }
 
     private SignInType currentSignInType;
+    private event Action OnSignInEvent = delegate { };
 
     private void Awake()
     {
@@ -30,6 +31,16 @@ public class AuthManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+    }
+
+    public void RegisterOnSignInSuccess(Action callback)
+    {
+        OnSignInEvent += callback;
+    }
+
+    public void UnregisterOnSignInSuccess(Action callback)
+    {
+        OnSignInEvent -= callback;
     }
 
     /// <summary>
@@ -89,6 +100,7 @@ public class AuthManager : MonoBehaviour
                 }
                 else
                 {
+                    OnSignInEvent?.Invoke();
                     listener.Invoke(true, responseText);
                 }
             }
