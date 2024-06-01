@@ -27,7 +27,7 @@ public class AuthUI : MonoBehaviour
 
     private void Awake()
     {
-        authManager = AuthManager.Instance;
+        authManager = ManagerFactory.GetAuthManager();
     }
 
     private void Start()

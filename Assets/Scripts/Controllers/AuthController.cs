@@ -21,7 +21,7 @@ public class AuthController : MonoBehaviour
 
     private void Awake()
     {
-        authManager = AuthManager.Instance;
+        authManager = ManagerFactory.GetAuthManager();
     }
 
     private void Start()

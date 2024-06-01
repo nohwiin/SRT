@@ -24,13 +24,13 @@ public class UIManager : MonoBehaviour
 
     private void Start()
     {
-        AuthManager.Instance.RegisterOnSignInSuccess(OnSignInEvent);
+        ManagerFactory.GetAuthManager().RegisterOnSignInSuccess(OnSignInEvent);
         ShowUI(authUI);
     }
 
     private void OnDestroy()
     {
-        AuthManager.Instance.UnregisterOnSignInSuccess(OnSignInEvent);
+        ManagerFactory.GetAuthManager().UnregisterOnSignInSuccess(OnSignInEvent);
     }
 
     /// <summary>
