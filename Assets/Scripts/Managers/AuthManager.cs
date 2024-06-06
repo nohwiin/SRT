@@ -1,5 +1,7 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Web;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -19,6 +21,7 @@ public class AuthManager : MonoBehaviour
 
     private SignInType currentSignInType;
     private event Action OnSignInEvent = delegate { };
+    private event Action OnSignOutEvent = delegate { };
 
     private void Awake()
     {
@@ -33,14 +36,40 @@ public class AuthManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// SignIn 성공 이벤트에 콜백을 등록합니다.
+    /// </summary>
+    /// <param name="callback">등록할 콜백 함수</param>
     public void RegisterOnSignInSuccess(Action callback)
     {
         OnSignInEvent += callback;
     }
 
+    /// <summary>
+    /// SignIn 성공 이벤트에서 콜백을 제거합니다.
+    /// </summary>
+    /// <param name="callback">제거할 콜백 함수</param>
     public void UnregisterOnSignInSuccess(Action callback)
     {
         OnSignInEvent -= callback;
+    }
+
+    /// <summary>
+    /// SignOut 성공 이벤트에 콜백을 등록합니다.
+    /// </summary>
+    /// <param name="callback">등록할 콜백 함수</param>
+    public void RegisterOnSignOutSuccess(Action callback)
+    {
+        OnSignOutEvent += callback;
+    }
+
+    /// <summary>
+    /// SignOut 성공 이벤트에서 콜백을 제거합니다.
+    /// </summary>
+    /// <param name="callback">제거할 콜백 함수</param>
+    public void UnregisterOnSignOutSuccess(Action callback)
+    {
+        OnSignOutEvent -= callback;
     }
 
     /// <summary>
@@ -67,44 +96,82 @@ public class AuthManager : MonoBehaviour
     /// <returns>코루틴</returns>
     private IEnumerator SignInAsync(User user, ResultDelegate<bool, string> listener)
     {
-        WWWForm form = new();
-        form.AddField("auto", "Y");
-        form.AddField("check", "Y");
-        form.AddField("page", "menu");
-        form.AddField("deviceKey", "-");
-        form.AddField("customerYn", "");
-        form.AddField("login_referer", Constants.API_ENDPOINTS_MAIN);
-        form.AddField("srchDvCd", (int)currentSignInType);
-        form.AddField("srchDvNm", user.Username);
-        form.AddField("hmpgPwdCphd", user.Password);
-
-        using (UnityWebRequest request = UnityWebRequest.Post(Constants.API_ENDPOINTS_LOGIN, form))
+        var signInRequestBody = new Dictionary<string, string>
         {
-            yield return request.SendWebRequest();
+            { "auto", "Y" },
+            { "check", "Y" },
+            { "page", "menu" },
+            { "deviceKey", "-" },
+            { "customerYn", "" },
+            { "login_referer", Constants.API_ENDPOINTS_MAIN },
+            { "srchDvCd", ((int)currentSignInType).ToString() },
+            { "srchDvNm", user.Username },
+            { "hmpgPwdCphd", HttpUtility.UrlEncode(user.Password) }
+        };
 
-            if (request.result != UnityWebRequest.Result.Success)
+        using UnityWebRequest request = UnityWebRequest.Post(Constants.API_ENDPOINTS_LOGIN, signInRequestBody);
+        request.SetRequestHeader("User-Agent", Constants.DEFAULT_HEADERS_USER_AGENT);
+        request.SetRequestHeader("Accept", Constants.DEFAULT_HEADERS_ACCEPT);
+        yield return request.SendWebRequest();
+
+        if (request.result != UnityWebRequest.Result.Success)
+        {
+            listener.Invoke(false, request.error);
+        }
+        else
+        {
+            string responseText = request.downloadHandler.text;
+
+            if (responseText.Contains("존재하지않는 회원입니다") || responseText.Contains("비밀번호 오류"))
             {
-                listener.Invoke(false, request.error);
+                listener.Invoke(false, responseText);
+            }
+            else if (responseText.Contains("Your IP Address Blocked due to abnormal access."))
+            {
+                listener.Invoke(false, "Your IP Address Blocked due to abnormal access.");
             }
             else
             {
-                string responseText = request.downloadHandler.text;
-
-                if (responseText.Contains("존재하지않는 회원입니다") || responseText.Contains("비밀번호 오류"))
-                {
-                    listener.Invoke(false, responseText);
-                }
-                else if (responseText.Contains("Your IP Address Blocked due to abnormal access."))
-                {
-                    listener.Invoke(false, "Your IP Address Blocked due to abnormal access.");
-                }
-                else
-                {
-                    OnSignInEvent?.Invoke();
-                    listener.Invoke(true, responseText);
-                }
+                OnSignInEvent?.Invoke();
+                listener.Invoke(true, responseText);
             }
         }
+    }
+
+    /// <summary>
+    /// 사용자를 로그아웃합니다.
+    /// </summary>
+    /// <param name="listener">로그아웃 결과를 수신할 델리게이트</param>
+    public void SignOut(ResultDelegate<bool, string> listener)
+    {
+        StartCoroutine(SignOutAsync(listener));
+    }
+
+    /// <summary>
+    /// 비동기 로그아웃 프로세스
+    /// </summary>
+    /// <param name="listener">로그아웃 결과를 수신할 델리게이트</param>
+    /// <returns>코루틴</returns>
+    private IEnumerator SignOutAsync(ResultDelegate<bool, string> listener)
+    {
+        var signOutRequestBody = new Dictionary<string, string>();
+
+        using UnityWebRequest request = UnityWebRequest.Post(Constants.API_ENDPOINTS_LOGOUT, signOutRequestBody);
+        request.SetRequestHeader("User-Agent", Constants.DEFAULT_HEADERS_USER_AGENT);
+        request.SetRequestHeader("Accept", Constants.DEFAULT_HEADERS_ACCEPT);
+        yield return request.SendWebRequest();
+
+        if (request.result != UnityWebRequest.Result.Success)
+        {
+            string responseText = request.downloadHandler.text;
+
+            listener.Invoke(false, responseText);
+            yield break;
+        }
+
+        ClearUserInfo();
+        OnSignOutEvent?.Invoke();
+        listener.Invoke(true, default);
     }
 
     /// <summary>
@@ -112,11 +179,23 @@ public class AuthManager : MonoBehaviour
     /// </summary>
     /// <param name="id">사용자 ID</param>
     /// <param name="pw">사용자 비밀번호</param>
-    public void SaveUserInfo(string id, string pw)
+    /// <param name="autoSignIn">자동 로그인 사용 여부</param>
+    public void SaveUserInfo(string id, string pw, bool autoSignIn)
     {
         PlayerPrefs.SetInt("lastSignInType", (int)currentSignInType);
         PlayerPrefs.SetString($"{currentSignInType}_ID", id);
         PlayerPrefs.SetString($"{currentSignInType}_PW", pw);
+        PlayerPrefs.SetString($"{currentSignInType}_AUTO_SIGNIN", autoSignIn.ToString());
+        PlayerPrefs.Save();
+    }
+
+    private void ClearUserInfo()
+    {
+        var lastSignInTypeAsInt = TryGetLastSignInType();
+        var lastSignInType = (SignInType)lastSignInTypeAsInt;
+
+        PlayerPrefs.SetString($"{lastSignInType}_PW", string.Empty);
+        PlayerPrefs.SetString($"{lastSignInType}_AUTO_SIGNIN", false.ToString());
         PlayerPrefs.Save();
     }
 
@@ -128,7 +207,6 @@ public class AuthManager : MonoBehaviour
     /// <returns>저장된 ID가 있는지 여부</returns>
     public bool TryGetRememberedId(string toggleText, out string rememberedId)
     {
-        SetCurrentSignInType(toggleText);
         rememberedId = PlayerPrefs.GetString($"{currentSignInType}_ID", "");
         return !string.IsNullOrEmpty(rememberedId);
     }
@@ -142,31 +220,28 @@ public class AuthManager : MonoBehaviour
     /// </returns>
     public int TryGetLastSignInType()
     {
-        return PlayerPrefs.GetInt("lastSignInType", (int)SignInType.MEMBERSHIP_ID);
+        var lastSignInType = PlayerPrefs.GetInt("lastSignInType", (int)SignInType.MEMBERSHIP_ID);
+        currentSignInType = (SignInType)lastSignInType;
+
+        return lastSignInType;
     }
 
     /// <summary>
-    /// 현재 SignInType을 설정합니다.
+    /// 저장된 사용자 정보를 가져옵니다.
     /// </summary>
-    /// <param name="toggleText">토글 텍스트를 기반으로 SignInType을 설정합니다.</param>
-    public void SetCurrentSignInType(string toggleText)
+    /// <param name="targetType">가져올 사용자 정보의 SignInType</param>
+    /// <param name="username">가져온 사용자 이름</param>
+    /// <param name="password">가져온 사용자 비밀번호</param>
+    /// <returns>자동 로그인을 수행 필요 여부</returns>
+    public bool TryGetSavedUserInfo(SignInType targetType, out string username, out string password)
     {
-        currentSignInType = ConvertTextToSignInType(toggleText);
-    }
-
-    /// <summary>
-    /// 텍스트를 SignInType으로 변환합니다.
-    /// </summary>
-    /// <param name="toggleText">토글 텍스트</param>
-    /// <returns>SignInType 열거형 값</returns>
-    private SignInType ConvertTextToSignInType(string toggleText)
-    {
-        return toggleText switch
+        username = PlayerPrefs.GetString($"{targetType}_ID", "");
+        password = PlayerPrefs.GetString($"{targetType}_PW", "");
+        if (bool.TryParse(PlayerPrefs.GetString($"{targetType}_AUTO_SIGNIN", "false"), out bool autoSignInEnabled) == false)
         {
-            "회원번호" => SignInType.MEMBERSHIP_ID,
-            "이메일주소" => SignInType.EMAIL,
-            "휴대폰번호" => SignInType.PHONE_NUMBER,
-            _ => throw new ArgumentException($"Invalid toggle text: {toggleText}")
-        };
+            autoSignInEnabled = false;
+        }
+
+        return autoSignInEnabled && !string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password);
     }
 }

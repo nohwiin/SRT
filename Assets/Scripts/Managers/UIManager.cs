@@ -25,12 +25,14 @@ public class UIManager : MonoBehaviour
     private void Start()
     {
         ManagerFactory.GetAuthManager().RegisterOnSignInSuccess(OnSignInEvent);
+        ManagerFactory.GetAuthManager().RegisterOnSignOutSuccess(OnSignOutEvent);
         ShowUI(authUI);
     }
 
     private void OnDestroy()
     {
         ManagerFactory.GetAuthManager().UnregisterOnSignInSuccess(OnSignInEvent);
+        ManagerFactory.GetAuthManager().UnregisterOnSignOutSuccess(OnSignOutEvent);
     }
 
     /// <summary>
@@ -51,5 +53,13 @@ public class UIManager : MonoBehaviour
     private void OnSignInEvent()
     {
         ShowUI(searchUI);
+    }
+
+    /// <summary>
+    /// SignOut 성공 시 호출되는 메서드
+    /// </summary>
+    private void OnSignOutEvent()
+    {
+        ShowUI(authUI);
     }
 }

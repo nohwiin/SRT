@@ -2,12 +2,13 @@ using System.Text.RegularExpressions;
 
 public static class Constants
 {
-    public static readonly Regex EMAIL_REGEX = new Regex(@"[^@]+@[^@]+\.[^@]+");
-    public static readonly Regex PHONE_NUMBER_REGEX = new Regex(@"(\d{3})-(\d{3,4})-(\d{4})");
+    public static readonly Regex EMAIL_REGEX = new(@"[^@]+@[^@]+\.[^@]+");
+    public static readonly Regex PHONE_NUMBER_REGEX = new(@"(\d{3})-(\d{3,4})-(\d{4})");
 
-    public static readonly string DEFAULT_USER_AGENT = 
+    public static readonly string DEFAULT_HEADERS_USER_AGENT = 
         "Mozilla/5.0 (Linux; Android 5.1.1; LGM-V300K Build/N2G47H) AppleWebKit/537.36 " +
         "(KHTML, like Gecko) Version/4.0 Chrome/39.0.0.0 Mobile Safari/537.36SRT-APP-Android V.1.0.6";
+    public static readonly string DEFAULT_HEADERS_ACCEPT = "application/json";
 
     public static readonly string SRT_MOBILE = "https://app.srail.or.kr:443";
     
@@ -26,6 +27,5 @@ public static class Constants
     public static readonly string LOGIN_TYPES_EMAIL = "2";
     public static readonly string LOGIN_TYPES_PHONE_NUMBER = "3";
 
-    public static readonly string HEADER_USER_AGENT = "User-Agent";
-    public static readonly string HEADER_ACCEPT = "application/json";
+    
 }

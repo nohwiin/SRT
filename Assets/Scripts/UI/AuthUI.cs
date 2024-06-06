@@ -19,20 +19,26 @@ public class AuthUI : MonoBehaviour
     [SerializeField]
     private Toggle autoSignInToggle;
 
+    [SerializeField]
+    private Button signInButton;
+
     private static readonly Color LabelDefaultColor = new(0.572549f, 0.572549f, 0.572549f, 1f);
     private static readonly Color UnderLineDefaultColor = new(0.7882353f, 0.7882353f, 0.7882353f, 1f);
     private static readonly Color PrimaryColor = new(0.4823529f, 0.1137255f, 0.4f, 1f);
 
     private AuthManager authManager;
+    private AuthController authController;
 
     private void Awake()
     {
         authManager = ManagerFactory.GetAuthManager();
+        authController = FindObjectOfType<AuthController>();
     }
 
     private void Start()
     {
         RegisterToggleEvents();
+        RegisterButtonEvents();
         SetPasswordFieldContentType();
         InitializeUI();
     }
@@ -40,6 +46,7 @@ public class AuthUI : MonoBehaviour
     private void OnDestroy()
     {
         UnregisterToggleEvents();
+        UnregisterButtonEvents();
     }
 
     /// <summary>
@@ -52,6 +59,14 @@ public class AuthUI : MonoBehaviour
             toggle.onValueChanged.AddListener(OnSignInTypeToggleValueChanged);
         }
         showPasswordToggle.onValueChanged.AddListener(OnShowPasswordToggleValueChanged);
+    }
+
+    /// <summary>
+    /// 모든 Button의 onClick 이벤트 리스너를 등록합니다.
+    /// </summary>
+    private void RegisterButtonEvents()
+    {
+        signInButton.onClick.AddListener(OnSignInButtonClicked);
     }
 
     /// <summary>
@@ -76,6 +91,14 @@ public class AuthUI : MonoBehaviour
     }
 
     /// <summary>
+    /// 모든 Button의 onClick 이벤트 리스너를 제거합니다.
+    /// </summary>
+    private void UnregisterButtonEvents()
+    {
+        signInButton?.onClick.RemoveListener(OnSignInButtonClicked);
+    }
+
+    /// <summary>
     /// UI의 초기 상태를 설정합니다. (예: 첫 번째 토글 선택, Placeholder 텍스트 설정 등)
     /// </summary>
     private void InitializeUI()
@@ -88,7 +111,6 @@ public class AuthUI : MonoBehaviour
             if (lastSignInType == toggleIndex)
             {
                 var toggleText = toggle.GetComponentInChildren<TextMeshProUGUI>().text;
-                authManager.SetCurrentSignInType(toggleText);
 
                 toggle.isOn = true;
                 SetInputFieldPlaceholders(toggleText);
@@ -103,6 +125,8 @@ public class AuthUI : MonoBehaviour
 
             toggleIndex += 1;
         }
+
+        authController.AutoSignInIfNeeded();
     }
 
     /// <summary>
@@ -227,5 +251,13 @@ public class AuthUI : MonoBehaviour
             passwordInputField.contentType = TMP_InputField.ContentType.Password;
         }
         passwordInputField.ForceLabelUpdate();
+    }
+
+    /// <summary>
+    /// 로그인 버튼 클릭 이벤트를 처리합니다.
+    /// </summary>
+    private void OnSignInButtonClicked()
+    {
+        authController.SignIn(usernameInputField.text, passwordInputField.text, rememberIdToggle.isOn, autoSignInToggle.isOn);
     }
 }
