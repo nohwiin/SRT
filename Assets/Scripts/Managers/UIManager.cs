@@ -5,9 +5,9 @@ public class UIManager : MonoBehaviour
     public static UIManager Instance { get; private set; }
 
     [SerializeField]
-    private IActiveUI authUI;
+    private GameObject authUI;
     [SerializeField]
-    private IActiveUI searchUI;
+    private GameObject searchUI;
 
     private void Awake()
     {
@@ -37,11 +37,8 @@ public class UIManager : MonoBehaviour
     /// 특정 UI를 활성화하고 나머지 UI를 비활성화합니다.
     /// </summary>
     /// <param name="uiToActivate">활성화할 UI</param>
-    public void ActiveUI(IActiveUI uiToActivate)
+    public void ActiveUI(GameObject uiToActivate)
     {
-        authUI.SetActive(false);
-        searchUI.SetActive(false);
-
         uiToActivate.SetActive(true);
     }
 
@@ -50,6 +47,8 @@ public class UIManager : MonoBehaviour
     /// </summary>
     private void OnSignInEvent()
     {
+        authUI.GetComponent<IActiveUI>().SetActive(false);
+
         ActiveUI(searchUI);
     }
 }

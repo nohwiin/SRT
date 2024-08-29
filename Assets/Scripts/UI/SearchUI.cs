@@ -14,6 +14,6 @@ public class SearchUI : MonoBehaviour, IActiveUI
 
     public void SetActive(bool isActive)
     {
-        throw new System.NotImplementedException();
+        
     }
 }
