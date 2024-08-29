@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class AuthUI : MonoBehaviour
+public class AuthUI : MonoBehaviour, IActiveUI
 {
     [SerializeField]
     private ToggleGroup signInTypeToggleGroup;
@@ -48,6 +48,26 @@ public class AuthUI : MonoBehaviour
         UnregisterToggleEvents();
         UnregisterButtonEvents();
     }
+
+    public void SetActive(bool isActive)
+    {
+        // 모든 입력 필드를 비활성화하거나 활성화합니다.
+        usernameInputField.interactable = isActive;
+        passwordInputField.interactable = isActive;
+
+        // 모든 토글을 비활성화하거나 활성화합니다.
+        foreach (Toggle toggle in signInTypeToggleGroup.GetComponentsInChildren<Toggle>())
+        {
+            toggle.interactable = isActive;
+        }
+        showPasswordToggle.interactable = isActive;
+        rememberIdToggle.interactable = isActive;
+        autoSignInToggle.interactable = isActive;
+
+        // 로그인 버튼을 비활성화하거나 활성화합니다.
+        signInButton.interactable = isActive;
+    }
+
 
     /// <summary>
     /// 모든 Toggle과 showPasswordToggle의 onValueChanged 이벤트 리스너를 등록합니다.

@@ -28,7 +28,7 @@ public class AuthController : MonoBehaviour
                 Debug.Log("SignIn successful");
                 Debug.Log(result);
                 Debug.Log(response);
-                
+
                 if (rememberId || autoSignIn)
                 {
                     authManager.SaveUserInfo(username, password, autoSignIn);
