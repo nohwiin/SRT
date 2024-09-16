@@ -46,7 +46,6 @@ public class AuthController : MonoBehaviour
     /// <summary>
     /// 로그아웃을 시도합니다.
     /// </summary>
-
     public void SignOut()
     {
         authManager.SignOut((result, response) =>
