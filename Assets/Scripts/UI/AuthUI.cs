@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class AuthUI : MonoBehaviour, IActiveUI
+public class AuthUI : MonoBehaviour, IActiveUI, ICommonUI, IButtonUI, IToggleUI
 {
     [SerializeField]
     private ToggleGroup signInTypeToggleGroup;
@@ -49,13 +49,12 @@ public class AuthUI : MonoBehaviour, IActiveUI
         UnregisterButtonEvents();
     }
 
+#region  IActiveUI
     public void SetActive(bool isActive)
     {
-        // 모든 입력 필드를 비활성화하거나 활성화합니다.
         usernameInputField.interactable = isActive;
         passwordInputField.interactable = isActive;
 
-        // 모든 토글을 비활성화하거나 활성화합니다.
         foreach (Toggle toggle in signInTypeToggleGroup.GetComponentsInChildren<Toggle>())
         {
             toggle.interactable = isActive;
@@ -64,64 +63,12 @@ public class AuthUI : MonoBehaviour, IActiveUI
         rememberIdToggle.interactable = isActive;
         autoSignInToggle.interactable = isActive;
 
-        // 로그인 버튼을 비활성화하거나 활성화합니다.
         signInButton.interactable = isActive;
     }
+#endregion
 
-
-    /// <summary>
-    /// 모든 Toggle과 showPasswordToggle의 onValueChanged 이벤트 리스너를 등록합니다.
-    /// </summary>
-    private void RegisterToggleEvents()
-    {
-        foreach (Toggle toggle in signInTypeToggleGroup.GetComponentsInChildren<Toggle>())
-        {
-            toggle.onValueChanged.AddListener(OnSignInTypeToggleValueChanged);
-        }
-        showPasswordToggle.onValueChanged.AddListener(OnShowPasswordToggleValueChanged);
-    }
-
-    /// <summary>
-    /// 모든 Button의 onClick 이벤트 리스너를 등록합니다.
-    /// </summary>
-    private void RegisterButtonEvents()
-    {
-        signInButton.onClick.AddListener(OnSignInButtonClicked);
-    }
-
-    /// <summary>
-    /// 비밀번호 입력 필드의 contentType을 Password로 설정하고, 이를 UI에 반영합니다.
-    /// </summary>
-    private void SetPasswordFieldContentType()
-    {
-        passwordInputField.contentType = TMP_InputField.ContentType.Password;
-        passwordInputField.ForceLabelUpdate();
-    }
-
-    /// <summary>
-    /// 모든 Toggle과 showPasswordToggle의 onValueChanged 이벤트 리스너를 제거합니다.
-    /// </summary>
-    private void UnregisterToggleEvents()
-    {
-        foreach (Toggle toggle in signInTypeToggleGroup.GetComponentsInChildren<Toggle>())
-        {
-            toggle.onValueChanged.RemoveListener(OnSignInTypeToggleValueChanged);
-        }
-        showPasswordToggle.onValueChanged.RemoveListener(OnShowPasswordToggleValueChanged);
-    }
-
-    /// <summary>
-    /// 모든 Button의 onClick 이벤트 리스너를 제거합니다.
-    /// </summary>
-    private void UnregisterButtonEvents()
-    {
-        signInButton?.onClick.RemoveListener(OnSignInButtonClicked);
-    }
-
-    /// <summary>
-    /// UI의 초기 상태를 설정합니다. (예: 첫 번째 토글 선택, Placeholder 텍스트 설정 등)
-    /// </summary>
-    private void InitializeUI()
+#region  ICommonUI
+    public void InitializeUI()
     {
         var lastSignInType = authManager.TryGetLastSignInType();
         var toggleIndex = 1;
@@ -147,6 +94,102 @@ public class AuthUI : MonoBehaviour, IActiveUI
         }
 
         authController.AutoSignInIfNeeded();
+    }
+#endregion
+
+#region  IButtonUI
+    public void RegisterButtonEvents()
+    {
+        signInButton.onClick.AddListener(OnSignInButtonClicked);
+    }
+
+    public void UnregisterButtonEvents()
+    {
+        signInButton?.onClick.RemoveListener(OnSignInButtonClicked);
+    }
+
+    /// <summary>
+    /// 로그인 버튼 클릭 이벤트를 처리합니다.
+    /// </summary>
+    private void OnSignInButtonClicked()
+    {
+        authController.SignIn(usernameInputField.text, passwordInputField.text, rememberIdToggle.isOn, autoSignInToggle.isOn);
+    }
+#endregion
+
+#region IToggleUI
+    public void RegisterToggleEvents()
+    {
+        foreach (Toggle toggle in signInTypeToggleGroup.GetComponentsInChildren<Toggle>())
+        {
+            toggle.onValueChanged.AddListener(OnSignInTypeToggleValueChanged);
+        }
+        showPasswordToggle.onValueChanged.AddListener(OnShowPasswordToggleValueChanged);
+    }
+
+    public void UnregisterToggleEvents()
+    {
+        foreach (Toggle toggle in signInTypeToggleGroup.GetComponentsInChildren<Toggle>())
+        {
+            toggle.onValueChanged.RemoveListener(OnSignInTypeToggleValueChanged);
+        }
+        showPasswordToggle.onValueChanged.RemoveListener(OnShowPasswordToggleValueChanged);
+    }
+
+    /// <summary>
+    /// 선택된 Toggle의 값이 변경되었을 때 호출되는 이벤트 핸들러입니다.
+    /// </summary>
+    /// <param name="isOn">Toggle의 상태 (선택됨 또는 선택되지 않음)</param>
+    private void OnSignInTypeToggleValueChanged(bool isOn)
+    {
+        foreach (Toggle toggle in signInTypeToggleGroup.GetComponentsInChildren<Toggle>())
+        {
+            Image toggleUnderLine = toggle.GetComponentInChildren<Image>();
+            TextMeshProUGUI toggleLabel = toggle.GetComponentInChildren<TextMeshProUGUI>();
+
+            if (toggle.isOn)
+            {
+                SetToggleColors(toggleUnderLine, toggleLabel, PrimaryColor);
+                SetInputFieldPlaceholders(toggleLabel.text);
+                SetInputFieldTexts(toggleLabel.text);
+                SetRememberIdToggleTexts(toggleLabel.text);
+            }
+            else
+            {
+                SetToggleColors(toggleUnderLine, toggleLabel, UnderLineDefaultColor, LabelDefaultColor);
+            }
+        }
+    }
+
+    /// <summary>
+    /// showPasswordToggle의 값이 변경되었을 때 호출되는 이벤트 핸들러입니다.
+    /// </summary>
+    /// <param name="isOn">Toggle의 상태 (선택됨 또는 선택되지 않음)</param>
+    private void OnShowPasswordToggleValueChanged(bool isOn)
+    {
+        Text toggleLabel = showPasswordToggle.GetComponentInChildren<Text>();
+
+        if (isOn)
+        {
+            toggleLabel.text = "숨기기";
+            passwordInputField.contentType = TMP_InputField.ContentType.Standard;
+        }
+        else
+        {
+            toggleLabel.text = "비밀번호 표시";
+            passwordInputField.contentType = TMP_InputField.ContentType.Password;
+        }
+        passwordInputField.ForceLabelUpdate();
+    }
+#endregion
+
+    /// <summary>
+    /// 비밀번호 입력 필드의 contentType을 Password로 설정하고, 이를 UI에 반영합니다.
+    /// </summary>
+    private void SetPasswordFieldContentType()
+    {
+        passwordInputField.contentType = TMP_InputField.ContentType.Password;
+        passwordInputField.ForceLabelUpdate();
     }
 
     /// <summary>
@@ -189,31 +232,6 @@ public class AuthUI : MonoBehaviour, IActiveUI
     }
 
     /// <summary>
-    /// 선택된 Toggle의 값이 변경되었을 때 호출되는 이벤트 핸들러입니다.
-    /// </summary>
-    /// <param name="isOn">Toggle의 상태 (선택됨 또는 선택되지 않음)</param>
-    private void OnSignInTypeToggleValueChanged(bool isOn)
-    {
-        foreach (Toggle toggle in signInTypeToggleGroup.GetComponentsInChildren<Toggle>())
-        {
-            Image toggleUnderLine = toggle.GetComponentInChildren<Image>();
-            TextMeshProUGUI toggleLabel = toggle.GetComponentInChildren<TextMeshProUGUI>();
-
-            if (toggle.isOn)
-            {
-                SetToggleColors(toggleUnderLine, toggleLabel, PrimaryColor);
-                SetInputFieldPlaceholders(toggleLabel.text);
-                SetInputFieldTexts(toggleLabel.text);
-                SetRememberIdToggleTexts(toggleLabel.text);
-            }
-            else
-            {
-                SetToggleColors(toggleUnderLine, toggleLabel, UnderLineDefaultColor, LabelDefaultColor);
-            }
-        }
-    }
-
-    /// <summary>
     /// Toggle의 언더라인 및 텍스트의 색을 설정합니다.
     /// </summary>
     /// <param name="underline">Toggle의 언더라인 이미지</param>
@@ -250,34 +268,5 @@ public class AuthUI : MonoBehaviour, IActiveUI
         {
             label.color = labelColor;
         }
-    }
-
-    /// <summary>
-    /// showPasswordToggle의 값이 변경되었을 때 호출되는 이벤트 핸들러입니다.
-    /// </summary>
-    /// <param name="isOn">Toggle의 상태 (선택됨 또는 선택되지 않음)</param>
-    private void OnShowPasswordToggleValueChanged(bool isOn)
-    {
-        Text toggleLabel = showPasswordToggle.GetComponentInChildren<Text>();
-
-        if (isOn)
-        {
-            toggleLabel.text = "숨기기";
-            passwordInputField.contentType = TMP_InputField.ContentType.Standard;
-        }
-        else
-        {
-            toggleLabel.text = "비밀번호 표시";
-            passwordInputField.contentType = TMP_InputField.ContentType.Password;
-        }
-        passwordInputField.ForceLabelUpdate();
-    }
-
-    /// <summary>
-    /// 로그인 버튼 클릭 이벤트를 처리합니다.
-    /// </summary>
-    private void OnSignInButtonClicked()
-    {
-        authController.SignIn(usernameInputField.text, passwordInputField.text, rememberIdToggle.isOn, autoSignInToggle.isOn);
     }
 }

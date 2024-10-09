@@ -5,9 +5,6 @@ using System.Web;
 using UnityEngine;
 using UnityEngine.Networking;
 
-public delegate void ResultDelegate<Result>(Result result);
-public delegate void ResultDelegate<Result, Response>(Result result, Response response);
-
 public enum SignInType
 {
     MEMBERSHIP_ID = 1,

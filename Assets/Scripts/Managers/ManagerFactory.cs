@@ -4,6 +4,7 @@ public static class ManagerFactory
 {
     private static AuthManager authManager;
     private static UIManager uiManager;
+    private static SearchManager searchManager;
 
     public static AuthManager GetAuthManager()
     {
@@ -31,5 +32,19 @@ public static class ManagerFactory
             }
         }
         return uiManager;
+    }
+
+    public static SearchManager GetSearchManager()
+    {
+        if (searchManager == null)
+        {
+            searchManager = Object.FindObjectOfType<SearchManager>();
+            if (searchManager == null)
+            {
+                var searchManagerGameObject = new GameObject("SearchManager");
+                searchManager = searchManagerGameObject.AddComponent<SearchManager>();
+            }
+        }
+        return searchManager;
     }
 }
